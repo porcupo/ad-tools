@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+# Dump an ldap object
+
+def badstart
+  puts "Use: " + $PROGRAM_NAME + " <group>"
+  abort "Ex:  " + $PROGRAM_NAME + " infra"
+end
+
+if (ARGV[0].nil?)
+  badstart
+end
+
+require 'rubygems'
+require 'net/ldap'
+require './adlib.rb'
+require 'highline/import'
+
+group = ARGV[0]
+
+# List all the attributes you could possibly want here:
+
+attrs = [
+          "dn",
+          "samaccountname",
+          "member",
+        ]
+
+# Probably can be left alone
+domains = [
+           "ad1.example.com",
+           "ad2.example.com",
+          ]
+
+ad = AD.new
+
+for domain in domains do
+  puts "Domain: #{domain}"
+  puts "--------------------"
+
+  entry = ad.get_account(domain,group,attrs)
+  if entry.nil? then
+    puts "*** Group not found in #{domain} ***"
+    puts ""
+    next
+  end
+  attrs.each do |attr|
+    if attr == :dn
+      puts "  dn: " + entry.dn
+    elsif attr != :member
+      entry[attr].each do |v|
+        puts "  #{attr}: #{v}"
+      end
+    end
+    if attr == :member
+      entry[attr].each do |v|
+        puts "  #{attr}: #{v}"
+      end
+    end
+  end
+end

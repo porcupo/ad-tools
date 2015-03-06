@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+
+ADMUSER = 'djo'
+ADMPASS = `grabpw-nonl`
+
+require 'rubygems'
+require 'net/ldap'
+
+group = ARGV[0]
+property = group.gsub(/^([[:alnum:]]*)_.*$/, '\1')
+
+if group.nil?
+  puts 'Creates new group'
+  abort "Use: " + $PROGRAM_NAME + " <group_name>"
+end
+
+ad_domain = 'ad1.example.com'
+ad_host = ad_domain
+
+ad_admin = ADMUSER + '@' + ad_domain
+ad_passwd = ADMPASS
+
+base = 'OU=Groups,DC=ad1,DC=example,DC=com'
+
+add_group_dn = 'cn=' + group + ',' + base
+
+auth = {
+  :method => :simple,
+  :username => ad_admin,
+  :password => ad_passwd,
+}
+
+ldap = Net::LDAP.new(:host => ad_host,
+                     :port => 389,
+                     :auth => auth,
+                     :base => base)
+
+unless ldap.bind
+  raise "Result: #{ldap.get_operation_result.code}: #{ldap.get_operation_result.message}"
+end
+
+puts "Adding group #{add_group_dn}"
+puts "---------------------------"
+
+add_group_attrs = {
+  :objectclass => ['top', 'group'],
+  :name => group,
+  :cn => group,
+  :samaccountname => group
+}
+
+ldap.add(:dn => add_group_dn, :attributes => add_group_attrs)
+
+puts "  Result: #{ldap.get_operation_result.code}: #{ldap.get_operation_result.message}"

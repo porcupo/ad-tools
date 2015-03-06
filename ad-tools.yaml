@@ -1,0 +1,11 @@
+:host: 'ad1.example.com'
+:base: 'dc=ad1,dc=example,dc=com'
+:port: 389
+:binduser: 'binduser'
+:bindpass: 'bindpass'
+:adminuser: 'yourlogin'
+# If you use an external password program, set this to true
+# and set adminpass to the program name
+#
+:adminpassprog: false
+:adminpass: 'grabpw-nonl'

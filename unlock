@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+# Unlocks an ad user account
+def badstart
+  abort "Use: " + $PROGRAM_NAME + " <login>"
+end
+
+if (ARGV[0].nil?)
+  badstart
+end
+
+domain = "ad1.example.com"
+
+require 'net/ldap'
+require './adlib.rb'
+require 'highline/import'
+
+attribute = :member
+
+user = Hash.new
+user[:return_attrs] = ["dn", 'lockouttime']
+user[:search_key] = "samaccountname"
+user[:search_value] = ARGV[0]
+method = 'replace'
+attribute = 'lockoutTime'
+
+ad = AD.new
+
+user[:entry] = ad.get_entry(domain,user[:search_key],user[:search_value],user[:return_attrs])
+
+if user[:entry].nil? then
+  abort "*** User #{user[:search_value]} not found in #{domain} ***"
+end
+
+puts
+puts "Unlocking " + user[:entry][:dn].first + " (lockouttime: " + user[:entry][:lockouttime].first + ")"
+ad.update_object(method,domain,user[:entry][:dn].first,'lockoutTime','0')
+puts 'Done!'

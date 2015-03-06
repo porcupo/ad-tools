@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'net/ldap'
+require './adlib.rb'
+require 'highline/import'
+
+login = ARGV[0]
+if login.nil?
+  abort "Use: " + $PROGRAM_NAME + " <login>"
+end
+
+# List all the attributes you could possibly want here:
+
+attrs = [
+          "uidnumber",
+          "msSFU30Name",
+          "msSFU30NisDomain",
+          "gidnumber",
+          "unixhomedirectory",
+          "loginshell",
+          "dn",
+          "cn",
+          "samaccountname",
+          "mail",
+        ]
+
+# Probably can be left alone
+domains = [
+           "ad1.example.com",
+           "ad2.example.com",
+          ]
+
+ad = AD.new
+
+for domain in domains do
+  puts "Domain: #{domain}"
+  puts "--------------------"
+
+  entry = ad.get_account(domain,login,attrs)
+  if entry.nil? then
+    puts "*** User not found in #{domain} ***"
+    puts ""
+    next
+  end
+  entry.attribute_names.each do |attr|
+    if attr == :dn
+      puts "  dn: " + entry.dn
+    else
+      entry[attr].each do |v|
+        puts "  #{attr}: #{v}"
+      end
+
+     next
+    end
+  end
+
+  if entry[:uidnumber].length == 0
+    puts ""
+    puts "*** No UNIX Attributes set in #{domain} ***"
+    puts ""
+    ua = ad.gen_unix_attributes(ad,domain,entry)
+    ua.each do |k, v|
+      puts "  #{k}: #{v}"
+    end
+    puts ""
+    if HighLine.agree("Add the above attributes to #{login} in #{domain}? [Y/N]: ") == true
+      puts "Confirmed! Inserting..."
+      puts ""
+      ad.add_unix_attributes(domain,entry,ua)
+    else
+      puts "Aborted!"
+    end
+  end
+end

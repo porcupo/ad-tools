@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'net/ldap'
+require './adlib.rb'
+require 'highline/import'
+
+login = ARGV[0]
+if login.nil?
+  abort "Use: " + $PROGRAM_NAME + " <login>"
+end
+
+# List all the attributes you could possibly want here:
+
+attrs = [
+          "dn",
+          "cn",
+          "samaccountname",
+          "mail",
+          "memberof",
+        ]
+
+# Probably can be left alone
+domains = [
+           "ad1.example.com",
+           "ad2.example.com",
+          ]
+
+ad = AD.new
+
+for domain in domains do
+  puts "Domain: #{domain}"
+  puts "--------------------"
+
+  entry = ad.get_account(domain,login,attrs)
+  if entry.nil? then
+    puts "*** User not found in #{domain} ***"
+    puts ""
+    next
+  end
+  attrs.each do |attr|
+    if attr == :dn
+      puts "  dn: " + entry.dn
+    elsif attr != :memberof
+      entry[attr].each do |v|
+        puts "  #{attr}: #{v}"
+      end
+    end
+    if attr == :memberof
+      entry[attr].each do |v|
+        puts "  #{attr}: #{v}"
+      end
+    end
+  end
+end
